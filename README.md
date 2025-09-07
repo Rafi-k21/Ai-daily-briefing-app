@@ -39,7 +39,7 @@ Your personal **AI-powered daily assistant** that gives you:
 
 ### 🌙 Dark Mode  
 ![Dark Mode](frontend/images/Screenshot 2025-09-07 233833.png)
----
+
 
 ## ⚙️ Installation  
 
