@@ -1,4 +1,4 @@
-/* 🌍 Global Styles */
+/* Global Styles */
 * {
   box-sizing: border-box;
 }
@@ -21,13 +21,13 @@ body {
   flex-direction: column;
 }
 
-/* 🌙 Dark Mode */
+/* Dark Mode */
 body.dark-mode {
   background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
   color: #f5f5f5;
 }
 
-/* 🌌 Particles Container */
+/* Particles Container */
 .particles {
   position: fixed;
   top: 0;
@@ -39,7 +39,7 @@ body.dark-mode {
   will-change: transform; /* Optimize for animations */
 }
 
-/* ☀️ Day Mode (Sun Rays) */
+/* Day Mode (Sun Rays) */
 .sun-ray {
   position: absolute;
   border-radius: 50%;
@@ -54,7 +54,7 @@ body.dark-mode {
   to { transform: translateY(-100vh); opacity: 0; }
 }
 
-/* 🌌 Night Mode (Stars) */
+/* Night Mode (Stars) */
 .star {
   position: absolute;
   border-radius: 50%;
@@ -68,7 +68,7 @@ body.dark-mode {
   50% { opacity: 1; transform: scale(1.2); }
 }
 
-/* 🌟 Container */
+/* Container */
 .container {
   max-width: 900px;
   margin: 0 auto;
@@ -79,7 +79,7 @@ body.dark-mode {
   flex: 1;
 }
 
-/* 📝 Header */
+/* Header */
 header h1 {
   font-size: clamp(2rem, 5vw, 2.5rem);
   font-weight: 700;
@@ -96,7 +96,7 @@ body.dark-mode .subtitle {
   color: #ddd;
 }
 
-/* 🔎 Search Box */
+/* Search Box */
 .search-box {
   display: flex;
   justify-content: center;
@@ -149,7 +149,7 @@ body.dark-mode .search-box button {
   background: #66bb6a;
 }
 
-/* 📦 Output Cards */
+/* Output Cards */
 #output {
   margin-top: 2rem;
   text-align: center;
@@ -181,7 +181,7 @@ body.dark-mode .card {
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
-/* 🚀 Fade-in Animation */
+/* Fade-in Animation */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -193,7 +193,7 @@ body.dark-mode .card {
   }
 }
 
-/* 🛠 Actions */
+/* Actions */
 #actions {
   margin-top: 1.5rem;
   display: flex;
@@ -228,7 +228,7 @@ body.dark-mode #actions button {
   background: #64b5f6;
 }
 
-/* 🌗 Theme Toggle */
+/* Theme Toggle */
 #themeToggle {
   position: fixed;
   top: 1rem;
@@ -259,7 +259,7 @@ body.dark-mode #themeToggle {
 }
 
 
-/* 👣 Footer */
+/* Footer */
 footer {
   margin-top: auto;
   padding: 1rem;
@@ -290,7 +290,7 @@ footer a:focus {
   outline-offset: 2px;
 }
 
-/* 📱 Responsive Design */
+/* Responsive Design */
 @media (max-width: 300px) {
   .container {
     padding: 1.5rem 0.5rem;
@@ -339,7 +339,7 @@ footer a:focus {
   }
 }
 
-/* ♿ Accessibility */
+/* Accessibility */
 :focus-visible {
   outline: 2px solid #2196f3;
   outline-offset: 2px;
