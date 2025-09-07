@@ -35,7 +35,7 @@ Your personal **AI-powered daily assistant** that gives you:
 ## 📸 Screenshots  
 
 ### 🌞 Light Mode  
-![Light Mode](frontend/images/Ai%20Daily.png)  
+![Light Mode](frontend/images/Screenshot 2025-09-07 233733.png)  
 
 ### 🌙 Dark Mode  
 (Add a screenshot here of your dark mode)  
