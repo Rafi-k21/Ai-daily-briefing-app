@@ -9,6 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+
 const WEATHER_KEY = process.env.WEATHER_KEY;
 const NEWS_KEY = process.env.NEWS_KEY;
 const GEMINI_KEY = process.env.GEMINI_KEY;
@@ -20,56 +21,65 @@ if (!WEATHER_KEY || !NEWS_KEY || !GEMINI_KEY) {
 
 const genAI = new GoogleGenerativeAI(GEMINI_KEY);
 
-// Weather API
-app.get("/weather/:city", async (req, res) => {
+// 🌍 Combined Briefing Endpoint
+app.get("/briefing", async (req, res) => {
   try {
-    const city = req.params.city;
-    const response = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${WEATHER_KEY}&units=metric`
-    );
-    if (!response.ok) {
-      throw new Error(`Weather API responded with status ${response.status}`);
-    }
-    res.json(await response.json());
-  } catch (err) {
-    res.status(500).json({ error: `Weather fetch failed: ${err.message}` });
-  }
-});
+    const city = req.query.city;
+    if (!city) return res.status(400).json({ error: "City is required" });
 
-// News API
-app.get("/news", async (req, res) => {
-  try {
-    const response = await fetch(
-      `https://newsapi.org/v2/top-headlines?category=technology&apiKey=${NEWS_KEY}`
+    // 1️⃣ Weather
+    const wRes = await fetch(
+      `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${WEATHER_KEY}&units=metric`
     );
-    if (!response.ok) {
-      throw new Error(`News API responded with status ${response.status}`);
-    }
-    res.json(await response.json());
-  } catch (err) {
-    res.status(500).json({ error: `News fetch failed: ${err.message}` });
-  }
-});
+    if (!wRes.ok) throw new Error("Weather data unavailable");
+    const wData = await wRes.json();
+    const weatherInfo = `${wData.main.temp}°C with ${wData.weather[0].description}`;
 
-// Gemini AI Summary
-app.post("/ai", async (req, res) => {
-  try {
-    const { prompt } = req.body;
-    if (!prompt) {
-      throw new Error("Prompt is required");
-    }
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-    const result = await model.generateContent(prompt);
+    // 2️⃣ News
+    const nRes = await fetch(
+      `https://newsapi.org/v2/top-headlines?country=us&apiKey=${NEWS_KEY}`
+    );
+    if (!nRes.ok) throw new Error("News unavailable");
+    const nData = await nRes.json();
+    const news = nData.articles.slice(0, 3).map(a => a.title);
+
+    // 3️⃣ AI Summary
+    const basePrompt = `Create a concise, professional daily briefing for ${city}.
+Weather: ${weatherInfo}.
+Top news: ${news.join(", ")}.
+Keep it engaging and informative.`;
+
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-preview-05-20" });
+    const result = await model.generateContent(basePrompt);
     const response = await result.response;
-    const text = response.text();
-    res.json({ text });
+    const aiSummary = response.text();
+
+    res.json({ weatherInfo, news, aiSummary });
   } catch (err) {
-    // 🔍 This block has been updated for better debugging
-    console.error("❌ An error occurred in the /ai route:", err);
-    res.status(500).json({ error: "AI fetch failed", details: err.message, stack: err.stack });
+    console.error("❌ Briefing error:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-app.listen(3000, () =>
-  console.log("✅ Backend running on http://localhost:3000")
+// 🌎 Location Reverse Geocode
+app.get("/location", async (req, res) => {
+  try {
+    const { lat, lon } = req.query;
+    if (!lat || !lon) return res.status(400).json({ error: "lat & lon are required" });
+
+    const rRes = await fetch(
+      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
+    );
+    if (!rRes.ok) throw new Error("Reverse geocode failed");
+    const rData = await rRes.json();
+
+    res.json({ city: rData.city || rData.locality || "" });
+  } catch (err) {
+    console.error("❌ Location error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.listen(5500, () =>
+  console.log("✅ Backend running on http://localhost:5500")
 );

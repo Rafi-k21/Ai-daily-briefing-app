@@ -1,126 +1,178 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const briefingBtn = document.getElementById("briefingBtn");
-    const cityInput = document.getElementById("cityInput");
-    const outputDiv = document.getElementById("output");
-    const loadingDiv = document.getElementById("loading");
+  const briefingBtn = document.getElementById("briefingBtn");
+  const cityInput = document.getElementById("cityInput");
+  const outputDiv = document.getElementById("output");
+  const actionsDiv = document.getElementById("actions");
+  let voices = [];
 
-    // You must use an API Key for these APIs. Replace with your actual key
-    const OPENWEATHER_API_KEY = "58926e7114151c66a8c43b58c99d427f";
-    const NEWSAPI_API_KEY = "894f924a593e410cb4385c867ff2def7";
+  // Load voices for speech synthesis
+  window.speechSynthesis.onvoiceschanged = () => {
+    voices = window.speechSynthesis.getVoices();
+  };
 
-    async function getWeatherData(city) {
-        const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${OPENWEATHER_API_KEY}&units=metric`;
-        const response = await fetch(weatherUrl);
-        if (!response.ok) {
-            throw new Error('City not found or weather data unavailable.');
-        }
-        const data = await response.json();
-        return data;
+  // 🌌 Floating Particles Effect
+  function generateParticles(mode) {
+    const particlesContainer = document.querySelector(".particles");
+    particlesContainer.innerHTML = "";
+
+    if (mode === "day") {
+      for (let i = 0; i < 15; i++) {
+        const ray = document.createElement("div");
+        ray.classList.add("sun-ray");
+        const size = Math.random() * 60 + 40;
+        ray.style.width = `${size}px`;
+        ray.style.height = `${size}px`;
+        ray.style.left = `${Math.random() * 100}%`;
+        ray.style.top = `${Math.random() * 100}%`;
+        ray.style.animationDuration = `${10 + Math.random() * 10}s`;
+        particlesContainer.appendChild(ray);
+      }
+    } else {
+      for (let i = 0; i < 40; i++) {
+        const star = document.createElement("div");
+        star.classList.add("star");
+        const size = Math.random() * 3 + 2;
+        star.style.width = `${size}px`;
+        star.style.height = `${size}px`;
+        star.style.left = `${Math.random() * 100}%`;
+        star.style.top = `${Math.random() * 100}%`;
+        star.style.animationDuration = `${2 + Math.random() * 3}s`;
+        particlesContainer.appendChild(star);
+      }
     }
+  }
 
-    async function getNewsData(country) {
-        const newsUrl = `https://newsapi.org/v2/top-headlines?country=${country}&apiKey=${NEWSAPI_API_KEY}`;
-        const response = await fetch(newsUrl);
-        if (!response.ok) {
-            throw new Error('News data unavailable.');
+  // 🌙 Theme persistence
+  if (localStorage.getItem("theme") === "dark") {
+    document.body.classList.add("dark-mode");
+    generateParticles("night");
+  } else {
+    generateParticles("day");
+  }
+
+  document.getElementById("themeToggle").addEventListener("click", () => {
+    document.body.classList.toggle("dark-mode");
+    const mode = document.body.classList.contains("dark-mode") ? "night" : "day";
+    localStorage.setItem("theme", mode === "night" ? "dark" : "light");
+    generateParticles(mode);
+  });
+
+  // 🌍 Auto-detect location
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      try {
+        const res = await fetch(`/location?lat=${lat}&lon=${lon}`);
+        const data = await res.json();
+        if (data.city) {
+          cityInput.value = data.city;
         }
-        const data = await response.json();
-        return data.articles.slice(0, 3).map(n => n.title);
-    }
-
-    async function generateSummary(weather, news) {
-        // This is the API key you need to add for the AI model
-        const apiKey = "AIzaSyChvcctBP5a9JYizTTnQVXrdISNT0Sh9Fk"; 
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-
-        const prompt = `Create a very concise and engaging daily briefing. The briefing should have an energetic and encouraging tone.
-        
-        Weather: ${weather}
-        Top News: ${news.join('. ')}
-        
-        Structure the briefing in a single paragraph, starting with a friendly greeting, followed by the weather, and then a summary of the top news. Do not use headings or bullet points.`;
-
-        const payload = {
-            contents: [{ parts: [{ text: prompt }] }],
-            tools: [{ "google_search": {} }],
-            systemInstruction: {
-                parts: [{ text: "You are a world-class AI daily briefing generator." }]
-            },
-        };
-
-        try {
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            const result = await response.json();
-            const summary = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!summary) throw new Error("AI summary generation failed.");
-            return summary;
-        } catch (error) {
-            console.error("AI summary error:", error);
-            return "AI summary unavailable.";
-        }
-    }
-
-    briefingBtn.addEventListener("click", async () => {
-        const city = cityInput.value.trim();
-        if (!city) {
-            outputDiv.innerHTML = '<p class="text-red-500 text-center font-medium">Please enter a city.</p>';
-            return;
-        }
-
-        outputDiv.style.opacity = '0';
-        outputDiv.style.transform = 'translateY(20px)';
-        loadingDiv.classList.remove("hidden");
-        briefingBtn.disabled = true;
-
-        try {
-            // Fetch weather data
-            const weatherData = await getWeatherData(city);
-            const weatherInfo = `The weather in ${city} is ${weatherData.main.temp}°C with ${weatherData.weather[0].description}.`;
-            
-            // Fetch news data (using a hardcoded country for simplicity, can be improved with geocoding)
-            const countryCode = "us"; // Example: US news. You could add logic here to determine country from city.
-            const newsTitles = await getNewsData(countryCode);
-
-            // Generate AI summary
-            const aiSummary = await generateSummary(weatherInfo, newsTitles);
-
-            // Render output
-            outputDiv.innerHTML = `
-                <h3 class="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <span role="img" aria-label="sun">☀️</span> Weather
-                </h3>
-                <p class="mb-6 text-gray-700">${weatherInfo}</p>
-                
-                <h3 class="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <span role="img" aria-label="newspaper">📰</span> Top News
-                </h3>
-                <ul class="list-disc pl-5 mb-6 text-gray-700">
-                    ${newsTitles.map(title => `<li class="mb-1">${title}</li>`).join('')}
-                </ul>
-                
-                <h3 class="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <span role="img" aria-label="robot">🤖</span> AI Summary
-                </h3>
-                <p class="text-gray-700 font-light leading-relaxed">${aiSummary}</p>
-            `;
-            
-            // Animate the output section
-            setTimeout(() => {
-                outputDiv.style.opacity = '1';
-                outputDiv.style.transform = 'translateY(0)';
-            }, 100);
-
-        } catch (error) {
-            outputDiv.innerHTML = `<p class="text-red-500 font-medium text-center">Error: ${error.message}. Please check your city name or API keys.</p>`;
-            console.error("Failed to generate briefing:", error);
-        } finally {
-            loadingDiv.classList.add("hidden");
-            briefingBtn.disabled = false;
-        }
+      } catch (e) {
+        console.error("Location fetch failed", e);
+      }
+    }, (error) => {
+      console.warn("Geolocation denied or failed:", error);
     });
+  }
+
+  // 🚀 Generate briefing (via backend)
+  async function generateBriefing(city) {
+    const res = await fetch(`http://localhost:5500/briefing?city=${encodeURIComponent(city)}`);
+
+    if (!res.ok) throw new Error("Briefing fetch failed");
+    return await res.json();
+  }
+
+  // 🎯 Button click
+  briefingBtn.addEventListener("click", async () => {
+    const city = cityInput.value.trim();
+    if (!city) {
+      outputDiv.innerHTML = `<p class="text-red-500">⚠️ Please enter a city.</p>`;
+      return;
+    }
+
+    outputDiv.innerHTML = "<p>Loading your briefing...</p>";
+    actionsDiv.classList.add("hidden");
+
+    try {
+      const { weatherInfo, news, aiSummary } = await generateBriefing(city);
+      outputDiv.innerHTML = `
+        <div class="card">
+          <h3>☀️ Weather</h3>
+          <p>The weather in ${city} is ${weatherInfo}.</p>
+        </div>
+        <div class="card">
+          <h3>📰 Top News</h3>
+          <ul>${news.map(n => `<li>${n}</li>`).join("")}</ul>
+        </div>
+        <div class="card">
+          <h3>🤖 AI Summary</h3>
+          <p id="summary">${aiSummary}</p>
+        </div>
+      `;
+      actionsDiv.classList.remove("hidden");
+    } catch (e) {
+      outputDiv.innerHTML = `<p class="text-red-500">⚠️ ${e.message}</p>`;
+    }
+  });
+
+  // 📋 Copy
+  document.getElementById("copyBtn").addEventListener("click", () => {
+    const text = document.getElementById("summary")?.innerText || "";
+    if (text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Copied to clipboard!");
+      }).catch(err => {
+        console.error("Copy failed", err);
+      });
+    }
+  });
+
+  // 📄 PDF
+  document.getElementById("pdfBtn").addEventListener("click", () => {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const outputText = document.getElementById("output").innerText;
+    doc.setFontSize(12);
+    doc.text(outputText.split('\n'), 10, 10);
+    doc.setFontSize(10);
+    doc.text("Built by Anamul Khan Rafi", 10, 280);
+    doc.save("daily-briefing.pdf");
+  });
+
+  // 📤 Share
+  document.getElementById("shareBtn").addEventListener("click", async () => {
+    const text = document.getElementById("summary")?.innerText || "";
+    if (text && navigator.share) {
+      try {
+        await navigator.share({ title: "AI Daily Briefing", text });
+      } catch (err) {
+        console.error("Share failed", err);
+        alert("Sharing not supported or failed.");
+      }
+    } else {
+      alert("Sharing not supported on this device.");
+    }
+  });
+
+  // 🔊 Voice
+  document.getElementById("voiceBtn").addEventListener("click", () => {
+    const text = document.getElementById("summary")?.innerText || "";
+    if (text && 'speechSynthesis' in window) {
+      const msg = new SpeechSynthesisUtterance(text.replace(/[^\w\s.,!?]/g, ''));
+      msg.rate = 0.8;
+      msg.pitch = 1.1;
+      msg.volume = 1;
+      const casualVoice = voices.find(voice =>
+        voice.name.includes('Casual') ||
+        voice.name.includes('Informal') ||
+        voice.name.includes('English')
+      );
+      if (casualVoice) msg.voice = casualVoice;
+      window.speechSynthesis.speak(msg);
+    } else {
+      alert("Speech synthesis not supported.");
+    }
+  });
 });
